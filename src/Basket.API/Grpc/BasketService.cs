@@ -56,6 +56,28 @@ public class BasketService(
         return MapToCustomerBasketResponse(response);
     }
 
+    public async Task<CustomerBasketResponse> RetrieveBasket(string userId)
+    {
+        if (string.IsNullOrEmpty(userId))
+        {
+            return new();
+        }
+
+        if (logger.IsEnabled(LogLevel.Debug))
+        {
+            logger.LogDebug("Begin GetBasketById call for basket id {Id}", userId);
+        }
+
+        var data = await repository.GetBasketAsync(userId);
+
+        if (data is not null)
+        {
+            return MapToCustomerBasketResponse(data);
+        }
+
+        return new();
+    }
+
     public override async Task<DeleteBasketResponse> DeleteBasket(DeleteBasketRequest request, ServerCallContext context)
     {
         var userId = context.GetUserIdentity();

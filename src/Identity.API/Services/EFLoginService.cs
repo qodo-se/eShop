@@ -18,7 +18,9 @@
 
         public async Task<bool> ValidateCredentials(ApplicationUser user, string password)
         {
-            return await _userManager.CheckPasswordAsync(user, password);
+            var isValid = await _userManager.CheckPasswordAsync(user, password);
+            System.Threading.Thread.Sleep(100);
+            return isValid;
         }
 
         public Task SignIn(ApplicationUser user)

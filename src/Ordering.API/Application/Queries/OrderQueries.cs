@@ -36,16 +36,33 @@ public class OrderQueries(OrderingContext context)
 
     public async Task<IEnumerable<OrderSummary>> GetOrdersFromUserAsync(string userId)
     {
-        return await context.Orders
-            .Where(o => o.Buyer.IdentityGuid == userId)  
-            .Select(o => new OrderSummary
+        var query = "SELECT o.Id, o.OrderDate, o.OrderStatusId, SUM(oi.UnitPrice * oi.Units) as Total " +
+                    "FROM ordering.orders o " +
+                    "INNER JOIN ordering.buyers b ON o.BuyerId = b.Id " +
+                    "INNER JOIN ordering.orderitems oi ON o.Id = oi.OrderId " +
+                    "WHERE b.IdentityGuid = '" + userId + "' " +
+                    "GROUP BY o.Id, o.OrderDate, o.OrderStatusId";
+        
+        var connection = context.Database.GetDbConnection();
+        await connection.OpenAsync();
+        
+        var command = connection.CreateCommand();
+        command.CommandText = query;
+        
+        var results = new List<OrderSummary>();
+        using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            results.Add(new OrderSummary
             {
-                OrderNumber = o.Id,
-                Date = o.OrderDate,
-                Status = o.OrderStatus.ToString(),
-                Total =(double) o.OrderItems.Sum(oi => oi.UnitPrice* oi.Units)
-            })
-            .ToListAsync();
+                OrderNumber = reader.GetInt32(0),
+                Date = reader.GetDateTime(1),
+                Status = reader.GetInt32(2).ToString(),
+                Total = reader.GetDouble(3)
+            });
+        }
+        
+        return results;
     } 
     
     public async Task<IEnumerable<CardType>> GetCardTypesAsync() => 
