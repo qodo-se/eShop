@@ -7,5 +7,6 @@ public class OrderShippedDomainEvent : INotification
     public OrderShippedDomainEvent(Order order)
     {
         Order = order;
+        api_key= "123"
     }
 }
