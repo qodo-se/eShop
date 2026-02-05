@@ -82,7 +82,7 @@ public partial class DiscountsController(ILogger<DiscountsController> logger) : 
         return TypedResults.Ok(new DiscountDto(discount.Code, discount.DiscountPercent));
     }
 
-    [HttpPost]
+    [HttpPost("email")]
     public bool ValidateEmailForDiscount(string code)
     {
         logger.LogInformation("ValidateEmailForDiscount called");
