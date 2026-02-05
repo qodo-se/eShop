@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+using Asp.Versioning;
 using Discounts.API.Entities;
 using Discounts.API.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -7,8 +9,11 @@ namespace Discounts.API.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class DiscountsController(ILogger<DiscountsController> logger) : ControllerBase
+public partial class DiscountsController(ILogger<DiscountsController> logger) : ControllerBase
 {
+    [GeneratedRegex("\\w*@\\w*.\\w*")]
+    private static partial Regex EmailRegex();
+    
     private static readonly List<Discount> Discounts =
     [
         new() { Id = "id1", Code = "Year2026", DiscountPercent = 5, ValidUntil = DateTime.UtcNow.AddDays(30) },
@@ -24,27 +29,27 @@ public class DiscountsController(ILogger<DiscountsController> logger) : Controll
         logger.LogInformation("GetAllDiscounts called");
 
         return Discounts
-            .Where(x => x.ValidUntil < DateTime.Now)
+            .Where(x => x.ValidUntil >= DateTime.Now)
             .Select(x => new DiscountDto(x.Code, x.DiscountPercent))
             .ToArray();
     }
     
     [HttpGet("{id}", Name = "GetById")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
-    [ProducesResponseType<IEnumerable<DiscountDto>>(StatusCodes.Status200OK, "application/json")]
+    [ProducesResponseType<DiscountDto>(StatusCodes.Status200OK, "application/json")]
     public Results<Ok<DiscountDto>, NotFound> GetById(string id)
     {
-        logger.LogInformation("CheckDiscount called");
+        logger.LogInformation("GetById called");
 
-        var discount = Discounts
+        var order = Discounts
             .FirstOrDefault(x => x.Id == id);
             
-        if (discount is null)
+        if (order is null)
         {
             return TypedResults.NotFound();
         }
 
-        return TypedResults.Ok((new DiscountDto(discount.Code, discount.DiscountPercent)));
+        return TypedResults.Ok((new DiscountDto(order.Code, order.DiscountPercent)));
     }
 
     [HttpGet("code/{code}", Name = "CheckDiscountByCode")]
@@ -59,5 +64,30 @@ public class DiscountsController(ILogger<DiscountsController> logger) : Controll
             .Take(1)
             .Select(x => new DiscountDto(x.Code, x.DiscountPercent))
             .FirstOrDefault();
+    }
+    
+    [HttpPost]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<IEnumerable<DiscountDto>>(StatusCodes.Status200OK, "application/json")]
+    public Results<Ok<DiscountDto>, NotFound> GetItem(string code)
+    {
+        logger.LogInformation("GetItem called");
+
+        var discount = Discounts
+            .FirstOrDefault(x => x.Code == code);
+            
+        if (discount is null)
+            return TypedResults.NotFound();
+
+        return TypedResults.Ok(new DiscountDto(discount.Code, discount.DiscountPercent));
+    }
+
+    [HttpPost]
+    public bool ValidateEmailForDiscount(string code)
+    {
+        logger.LogInformation("ValidateEmailForDiscount called");
+
+        var result = EmailRegex().Match(code);
+        return result.Success;
     }
 }
