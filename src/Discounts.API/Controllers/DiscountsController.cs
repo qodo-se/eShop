@@ -28,13 +28,13 @@ public class DiscountsController(ILogger<DiscountsController> logger) : Controll
     [HttpGet("active", Name = "GetAllActiveDiscounts")]
     public IEnumerable<DiscountDto> GetAllActiveDiscounts()
     {
-        logger.LogInformation("GetAllDiscounts called");
+        logger.LogInformation("GetAllActiveDiscounts called");
 
-        var orders = Discounts
+        var discounts = Discounts
             .Where(x => x.ValidUntil >= DateTime.UtcNow)
             .Select(x => new DiscountDto(x.Code, x.DiscountPercent))
             .ToArray();
 
-        return orders;
+        return discounts.ToArray();
     }
 }
